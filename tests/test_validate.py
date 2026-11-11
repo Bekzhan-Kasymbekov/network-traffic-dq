@@ -63,3 +63,12 @@ def test_nonfinite_duration():
 
     assert record is None
     assert "dur must be finite" in errors
+
+def test_integer_overflow():
+    payload = make_valid_flow()
+    payload["spkts"] = str(2**31)
+
+    record, errors = validate_flow(payload)
+
+    assert record is None
+    assert "spkts must be <= 2147483647" in errors

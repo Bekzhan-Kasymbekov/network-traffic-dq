@@ -1,6 +1,9 @@
 import math
 
-def parse_integer(value, field, errors, minimum=None):
+INT32_MAX = 2**31 - 1
+INT64_MAX = 2**63 - 1
+
+def parse_integer(value, field, errors, minimum=None, maximum=None):
     try:
         result = int(value)
     except (TypeError, ValueError, OverflowError):
@@ -8,8 +11,11 @@ def parse_integer(value, field, errors, minimum=None):
         return None
 
     if minimum is not None and result < minimum:
-        errors.append(f"{field} must >= {minimum}")
+        errors.append(f"{field} must be >= {minimum}")
 
+    if maximum is not None and result > maximum:
+        errors.append(f"{field} must be <= {maximum}")
+    
     return result
 
 def parse_float(value, field, errors, minimum=None):
@@ -32,7 +38,7 @@ def validate_flow(payload):
     errors = []
 
     flow_id = parse_integer(
-        payload.get("id"), "id", errors, minimum=1    
+        payload.get("id"), "id", errors, minimum=1, maximum=INT32_MAX,
     )
 
     dur = parse_float(
@@ -40,19 +46,19 @@ def validate_flow(payload):
     )
 
     spkts = parse_integer(
-        payload.get("spkts"), "spkts", errors, minimum=0
+        payload.get("spkts"), "spkts", errors, minimum=0, maximum=INT32_MAX,
     )
 
     dpkts = parse_integer(
-        payload.get("dpkts"), "dpkts", errors, minimum=0
+        payload.get("dpkts"), "dpkts", errors, minimum=0, maximum=INT32_MAX,
     )
 
     sbytes = parse_integer(
-        payload.get("sbytes"), "sbytes", errors, minimum=0
+        payload.get("sbytes"), "sbytes", errors, minimum=0, maximum=INT64_MAX,
     )
 
     dbytes = parse_integer(
-        payload.get("dbytes"), "dbytes", errors, minimum=0
+        payload.get("dbytes"), "dbytes", errors, minimum=0, maximum=INT64_MAX,
     )
 
     label = parse_integer(
