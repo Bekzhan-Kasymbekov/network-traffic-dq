@@ -1,0 +1,18 @@
+CREATE SCHEMA IF NOT EXISTS raw;
+CREATE SCHEMA IF NOT EXISTS clean;
+CREATE SCHEMA IF NOT EXISTS mart;
+
+CREATE TABLE IF NOT EXISTS raw.network_flows(
+  raw_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+  batch_id UUID NOT NULL,
+
+  source_file TEXT NOT NULL,
+  source_row_number INTEGER NOT NULL,
+
+  payload JSONB NOT NULL,
+
+  ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  UNIQUE (batch_id, source_row_number)
+);
