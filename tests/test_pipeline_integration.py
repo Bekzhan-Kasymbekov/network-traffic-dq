@@ -8,6 +8,7 @@ from pipeline.generate_broken import main as generate_broken
 from pipeline.load import get_batch_id, load_csv
 from pipeline.transform import transform_all
 from pipeline.quality import generate_reports
+from pipeline.mart import build_marts
 
 ROOT = Path(__file__).resolve().parent.parent
 TEST_CSV = ROOT / "data/broken/unsw_corrupted.csv"
@@ -29,6 +30,8 @@ def test_corrupted_data_pipeline():
         with conn.cursor() as cursor:
             cursor.execute("""
                 TRUNCATE TABLE
+                    mart.protocol_statistics,
+                    mart.attack_statistics,
                     dq.rule_failures,
                     dq.batch_metrics,
                     clean.network_flows,
@@ -131,3 +134,40 @@ def test_corrupted_data_pipeline():
                 "SELECT COUNT(*) FROM dq.rule_failures"
             )
             assert cursor.fetchone()[0] == 7
+
+    # Test MART generation.
+    with psycopg.connect(
+        connection_string,
+        autocommit=True,
+    ) as mart_conn:
+
+        build_marts(mart_conn)
+
+        with mart_conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT SUM(flow_count)
+                FROM mart.protocol_statistics
+            """)
+            assert cursor.fetchone()[0] == 1
+
+            cursor.execute("""
+                SELECT SUM(flow_count)
+                FROM mart.attack_statistics
+            """)
+            assert cursor.fetchone()[0] == 1
+
+        # Verify repeated execution.
+        build_marts(mart_conn)
+
+        with mart_conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT SUM(flow_count)
+                FROM mart.protocol_statistics
+            """)
+            assert cursor.fetchone()[0] == 1
+
+            cursor.execute("""
+                SELECT SUM(flow_count)
+                FROM mart.attack_statistics
+            """)
+            assert cursor.fetchone()[0] == 1
