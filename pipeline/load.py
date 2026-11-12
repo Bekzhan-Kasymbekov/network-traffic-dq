@@ -2,6 +2,7 @@ import csv
 import hashlib
 import os
 import uuid
+import argparse
 
 from pathlib import Path
 
@@ -84,8 +85,28 @@ def load_csv(connection, path, batch_id):
     return total_rows
 
 def main():
-    batch_id = get_batch_id(CSV_PATH)
+    parser = argparse.ArgumentParser(
+        description="Load network traffic CSV into PostgreSQL"
+    )
 
+    parser.add_argument(
+        "--file",
+        type=Path,
+        default=CSV_PATH,
+        help="Path to the input CSV file",
+    )
+
+    args = parser.parse_args()
+
+    csv_path = args.file.resolve()
+
+    if not csv_path.is_file():
+        parser.error(f"File not found {csv_path}")
+
+    batch_id = get_batch_id(csv_path)
+
+
+    print(f"Source file: {csv_path.name}")
     print(f"Batch ID: {batch_id}")
 
     connection_string = os.environ["DATABASE_URL"]
@@ -93,7 +114,7 @@ def main():
     with psycopg.connect(connection_string) as connection:
         total = load_csv(
             connection,
-            CSV_PATH,
+            csv_path,
             batch_id,
         )
 
