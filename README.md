@@ -24,34 +24,7 @@ The pipeline uses the **UNSW-NB15 training dataset**, containing 175,341 network
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    A["UNSW-NB15 CSV"] --> B["Python Ingestion"]
-    B --> C[("PostgreSQL: raw.network_flows")]
-
-    C --> D["Validation and Transformation"]
-
-    D -->|Valid| E[("clean.network_flows")]
-    D -->|Invalid| F[("clean.rejected_flows")]
-
-    E --> G["Data Quality Reporting"]
-    F --> G
-
-    E --> H["Analytics Aggregation"]
-
-    C --> G
-
-    G --> I[("dq.batch_metrics")]
-    G --> J[("dq.rule_failures")]
-
-    H --> K[("mart.protocol_statistics")]
-    H --> L[("mart.attack_statistics")]
-
-    M["Apache Airflow"] -.-> B
-    M -.-> D
-    M -.-> G
-    M -.-> H
-```
+![Network Traffic Data Quality Pipeline Architecture](docs/architecture.png)
 
 The pipeline follows a layered data architecture:
 
