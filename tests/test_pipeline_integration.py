@@ -1,8 +1,11 @@
 import os
+import csv
+
 from pathlib import Path
 from decimal import Decimal
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from pipeline.generate_broken import main as generate_broken
 from pipeline.load import get_batch_id, load_csv
@@ -41,6 +44,51 @@ def test_corrupted_data_pipeline():
             """)
 
         conn.commit()
+
+        # Simulate an interrupted ingestion.
+        # Only the first three records were commited.
+
+        with TEST_CSV.open(
+            newline="",
+            encoding="utf-8-sig",
+        ) as file:
+            reader = csv.DictReader(file)
+
+            partial_records = []
+
+            for row_number, row in enumerate(reader, start=2):
+                if len(partial_records) >= 3:
+                    break
+
+                partial_records.append(
+                    (
+                        batch_id,
+                        TEST_CSV.name,
+                        row_number,
+                        Jsonb(row),
+                    )
+                )
+
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO raw.network_flows (
+                    batch_id,
+                    source_file,
+                    source_row_number,
+                    payload
+                )
+                VALUES (%s, %s, %s, %s)
+                """,
+                partial_records,
+            )
+
+        conn.commit()
+
+        # Verify our simulated partial state.
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM raw.network_flows")
+            assert cursor.fetchone()[0] == 3
 
         # First execution
         load_csv(conn, TEST_CSV, batch_id)
