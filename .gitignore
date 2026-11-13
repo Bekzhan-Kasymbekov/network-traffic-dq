@@ -10,3 +10,6 @@ data/broken/*
 !data/broken/.gitkeep
 
 .pytest_cache/
+
+.venv-airflow/
+.airflow/
